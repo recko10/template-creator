@@ -117,23 +117,3 @@ def generate_story_prompts(greeting_card_info: str) -> str:
             f"Create the following scene in a {{aesthetic}} style:\n\n{scene}"
         )
     return formatted
-
-
-# GREETING_CARD_INFO = {
-#     "title": "Dinosaur Roar Birthday",
-#     "blurb": "For the little one who's roaring into a new year of life!",
-#     "questions": [
-#         "Photo of the birthday kiddo?",
-#         "Photo of yourself?"
-#     ]
-# }
-
-# GREETING_CARD_PROMPT = f"""
-# Title: {GREETING_CARD_INFO["title"]}
-# Blurb: {GREETING_CARD_INFO["blurb"]}
-# Questions: {GREETING_CARD_INFO["questions"]}
-# """
-
-# print(generate_story_prompts(GREETING_CARD_PROMPT))
-
-# # TODO add '?' after each question
