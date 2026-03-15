@@ -526,6 +526,11 @@ def process_variation(variation: dict) -> str:
 
     return template_id
 
+def create_single_template(template: dict) -> str:
+    """Create a single template end-to-end: story prompts, create in backend, panels, cover art.
+    template should have: title, blurb, questions."""
+    return process_variation(template)
+
 def create_templates_full(greeting_card: dict) -> list[str]:
     # Sequential: generate all variations at once (single LLM call)
     prompt = (
@@ -556,12 +561,10 @@ def create_templates_full(greeting_card: dict) -> list[str]:
     return template_ids
 
 create_templates_full({
-    "title": "Happy Birthday",
-    "blurb": "To wish them the happiest of birthdays.",
+    "title": "Wedding Congratulations",
+    "blurb": "Celebrate the newlyweds on their special day.",
     "questions": [
-        "Photo of the birthday star?",
-        "Who are you wishing?",
+        "Photo of the groom?",
+        "Photo of bride?",
     ]
 })
-
-

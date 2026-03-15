@@ -9,7 +9,7 @@ dotenv.load_dotenv()
 OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "anthropic/claude-opus-4.6"
-N_VARIATIONS = 100
+N_VARIATIONS = 15
 
 SYSTEM_PROMPT = f"""
 You are an expert at creating personal greeting cards. 
@@ -17,20 +17,26 @@ A personal greeting card is a card that includes questions directed to the sende
 
 Your task:
 -Given an existing personal greeting card, you must generate {N_VARIATIONS} variations of the card.
--A variation is defined as a personal greeting card that has the same core premise as its parent card, but is more specific and paints a novel scenerio.
--Be creative with the variations by entrenching them in a specific theme, not just scenerio. For example, "Mamma Mia Themed Sweet 16" beats "Sweet 16 Birthday Wishes". Themes do not have to relate to pop culture, but should be fun or novel. Similar to how Hallmark cards are structured.
+-A variation is defined as a personal greeting card that has the same core premise as its parent card, but is more specific and paints a novel scenerio or uses a theme.
+-Be creative with the variations by entrenching them in a specific scenerio OR a specific theme.
+
+For example, "Mamma Mia Themed Sweet 16" beats "Sweet 16 Birthday Wishes", since it has a good theme. 
+"Congrats to the Childhood Sweethearts" beats "Wedding Congratulations", since it has a good scenerio. 
+Similar to how Hallmark cards are structured.
 
 Examples of bad greeting card variations:
 - "Sports Birthday Wishes"
 - "Finally 21!"
 - "Daily Horoscope"
 - "Happy Diwali!"
+- "Congrats on the Wedding!"
 
 Examples of great greeting card variations:
 - "Football Themed Birthday"
 - "Casamigos-filled 21st Birthday"
 - "Aquarius Daily Horoscope"
 - "Cracking eggs on Diwali!"
+- "Wishing you a Pokemon-filled Wedding!
 
 An example of a personal greeting card:
 
@@ -53,7 +59,9 @@ Requirements:
 -Only include photo related questions. You may use either exactly 1 or 2 questions based on whether the card is dedicated to just yourself (yes this is possible), just someone else, or involves both you and someone else.
 -Make sure the questions are labeled plainly, such as "photo of yourself?" or "photo of the birthday star?", as some basic examples. Do not be too poetic here.
 -If there are obvious variations, you should just use those. For example, "Daily Horoscope" can easily be broken down into "Aquarius Daily Horoscope", "Pisces Daily Horoscope", etc.
--You are allowed to be creative with the titles, but make it clear what the card is about whenever you decide to do this.
+-You are allowed to be creative with the titles, but make it clear what the card is about whenever you decide to do this. You may use puns or other fun language.
+-When coming up with variants, focus on the most common themes/scenerios, since they are more likely to be used.
+-When creating variations, make sure that you equally balance using themes and scenerios.
 -Return your result in JSON format like so:
 
 ```json
