@@ -8,13 +8,73 @@ import httpx
 
 from generate_story_prompts import generate_story_prompts
 from generate_template_variation import generate_template_variation
-from riff_backend import add_templates, get_gift_template, update_gift_template, regenerate_panels, generate_nanobanana, update_gift_template_image, backfill_gift_template_music
+from riff_backend import add_templates, create_gift_template, get_gift_template, update_gift_template, regenerate_panels, generate_nanobanana, update_gift_template_image, backfill_gift_template_music
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 dotenv.load_dotenv()
 
 OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+VISUAL_TAGS = {
+    "04f82724-5532-4409-b308-3170151e1dec": "Oil Painting",
+    "0d037ca2-6e6e-4ac4-9803-52f6d771c8e6": "Ghibli-style Anime",
+    "1c4f6bb3-35c5-49d1-b3b2-773f6b3ea859": "Children's Storybook",
+    "1ef914c7-1e6e-4dc2-873e-b128894a6189": "3D Cartoon",
+    "3b1c8bb1-251a-441d-b77b-921b493910f4": "Claymation",
+    "3cd9e793-3982-4862-aee6-d17f80290f8c": "Photorealistic",
+    "42be0fce-1121-4f3c-b7af-e8a4157860af": "Newspaper Comic",
+    "565e41ce-e43a-4581-904f-2969bafa0bc7": "Cut Paper Collage",
+    "5e4c30ec-ab71-4617-b28b-c15ac001e32d": "Risograph Print",
+    "60206eb2-bf52-4b46-ac2b-6aa696a23914": "Low-Poly 3D",
+    "63bfe536-adfc-46e2-a029-30cf22b96fbe": "Hand-drawn",
+    "758c2081-582c-4924-80cb-4699a90314f0": "Mid-century Editorial Illustration",
+    "9355145d-4291-4378-afb7-56d8891c86aa": "Black and White Manga Panels",
+    "c545bc6c-2c9a-4be9-b590-dcd58760dc85": "Retro Anime",
+    "c9f52b23-a3fd-4495-bac5-cae05581c4ce": "Watercolor",
+    "fee44934-cf07-4c6d-809e-8f523d59730e": "Pixel Art",
+}
+
+def pick_visual_tag(title: str, blurb: str) -> str:
+    options = "\n".join(f"- {name}" for name in VISUAL_TAGS.values())
+    prompt = (
+        f"Greeting card title: {title}\n"
+        f"Blurb: {blurb}\n\n"
+        f"Pick the single best visual style for this greeting card from the options below:\n{options}\n\n"
+        "Return ONLY the exact style name, nothing else."
+    )
+
+    response = httpx.post(
+        OPENROUTER_URL,
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "google/gemini-2.5-flash",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    chosen_name = response.json()["choices"][0]["message"]["content"].strip()
+
+    # Find the tag ID matching the chosen name
+    name_to_id = {name: tag_id for tag_id, name in VISUAL_TAGS.items()}
+    tag_id = name_to_id.get(chosen_name)
+    if tag_id is None:
+        # Fuzzy fallback: find closest match
+        chosen_lower = chosen_name.lower()
+        for name, tid in name_to_id.items():
+            if chosen_lower in name.lower() or name.lower() in chosen_lower:
+                tag_id = tid
+                break
+    if tag_id is None:
+        tag_id = random.choice(list(VISUAL_TAGS.keys()))
+        print(f"Warning: LLM returned unknown style '{chosen_name}', falling back to random")
+
+    print(f"Visual tag for '{title}': {chosen_name} -> {tag_id}")
+    return tag_id
 
 def parse_variations(raw: str) -> list[dict]:
     json_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)
@@ -38,6 +98,7 @@ def populate(greeting_card: dict) -> dict:
     print(variations)
 
     story_prompts = []
+    visual_tag_ids = []
     for variation in variations:
         variation_prompt = (
             f"Title: {variation['title']}\n"
@@ -48,8 +109,9 @@ def populate(greeting_card: dict) -> dict:
         story_prompt = generate_story_prompts(variation_prompt)
         print(story_prompt)
         story_prompts.append(story_prompt)
+        visual_tag_ids.append(pick_visual_tag(variation["title"], variation["blurb"]))
 
-    results = add_templates(variations, story_prompts)
+    results = add_templates(variations, story_prompts, visual_tag_ids=visual_tag_ids)
     print("Template creation results:")
     print(results)
 
@@ -284,6 +346,7 @@ def pick_person_images(template_name: str, template_blurb: str, questions: list[
         "- If for a boy (e.g. 'for Boys', 'for Son'), person_one should be boy.\n"
         "- If for a girl (e.g. 'for Girls', 'for Daughter'), person_one should be girl.\n"
         "- person_one and person_two should be different people.\n"
+        "- Never pick the same character twice. If you need two women, for example, use white_woman and indian_woman.\n"
         "- For generic templates, pick any reasonable combination.\n\n"
         "Return JSON only, no explanation:\n"
         '{"person_one": "<option>", "person_two": "<option>"}'
@@ -415,42 +478,90 @@ def regenerate_cover_art(gift_template_id: str) -> dict:
 #         except Exception as e:
 #             print(f"Failed cover art for {template_id}: {e}")
 
+def process_variation(variation: dict) -> str:
+    """Process one variation end-to-end: story prompts, visual tag, create template, panels, cover art."""
+    variation_prompt = (
+        f"Title: {variation['title']}\n"
+        f"Blurb: {variation['blurb']}\n"
+        f"Questions: {variation['questions']}"
+    )
+
+    # Step 1: generate story prompts
+    story_prompts = generate_story_prompts(variation_prompt)
+
+    # Step 2: pick random visual tag
+    visual_tag_id = random.choice(list(VISUAL_TAGS.keys()))
+
+    # Step 3: create template in backend
+    parameters = [
+        {"name": q, "type": "image", "required": True, "position": j}
+        for j, q in enumerate(variation["questions"])
+    ]
+    config = {
+        "version": 2,
+        "num_subjects": len(variation["questions"]),
+        "num_panels": len(story_prompts),
+        "prompts": [
+            {"position": str(j), "prompt": prompt}
+            for j, prompt in enumerate(story_prompts)
+        ],
+    }
+    result = create_gift_template(
+        variation["title"],
+        blurb=variation["blurb"],
+        tag_ids=[visual_tag_id],
+        parameters=parameters,
+        config=config,
+    )
+    template_id = result["data"]["id"]
+    print(f"Created template {template_id} for '{variation['title']}'")
+
+    # Step 4: regenerate panel previews
+    regenerate_template_previews(template_id)
+    print(f"Regenerated panels for {template_id}")
+
+    # Step 5: generate cover art (depends on panels from step 4)
+    regenerate_cover_art(template_id)
+    print(f"Cover art done for {template_id}")
+
+    return template_id
+
 def create_templates_full(greeting_card: dict) -> list[str]:
-    # Step 1-2: Create variants, generate configs, and create templates in DB
-    result = populate(greeting_card)
-    template_ids = [r["data"]["id"] for r in result["results"]]
-    print(f"Created {len(template_ids)} templates: {template_ids}")
+    # Sequential: generate all variations at once (single LLM call)
+    prompt = (
+        f"Title: {greeting_card['title']}\n"
+        f"Blurb: {greeting_card['blurb']}\n"
+        f"Questions: {greeting_card['questions']}"
+    )
+    raw_response = generate_template_variation(prompt)
+    variations = parse_variations(raw_response)
+    print(f"Generated {len(variations)} variations")
 
-    # Step 3-4: For each template, regenerate panels then create cover art
-    def process_template(tid: str):
-        print(f"Regenerating panels for {tid}...")
-        regenerate_template_previews(tid)
-        print(f"Creating cover art for {tid}...")
-        regenerate_cover_art(tid)
-        print(f"Fully processed {tid}")
-
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(process_template, tid): tid for tid in template_ids}
+    # Parallel: process each variation end-to-end, concurrency 5
+    template_ids = []
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            executor.submit(process_variation, variation): i
+            for i, variation in enumerate(variations)
+        }
         for future in as_completed(futures):
-            template_id = futures[future]
+            idx = futures[future]
             try:
-                future.result()
-                print(f"Done: {template_id}")
+                tid = future.result()
+                template_ids.append(tid)
+                print(f"Done variation {idx}: {tid}")
             except Exception as e:
-                print(f"Failed: {template_id}: {e}")
-
-    # Step 5: Backfill music for all templates
-    # print(f"Backfilling music for {len(template_ids)} templates...")
-    # music_result = backfill_gift_template_music(template_ids)
-    # print(f"Music backfill result: {music_result}")
+                print(f"Failed variation {idx}: {e}")
 
     return template_ids
 
 create_templates_full({
-    "title": "Birthday Wishes",
+    "title": "Happy Birthday",
     "blurb": "To wish them the happiest of birthdays.",
     "questions": [
         "Photo of the birthday star?",
-        "Photo of yourself?"
+        "Who are you wishing?",
     ]
 })
+
+

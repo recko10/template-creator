@@ -35,7 +35,7 @@ Poor word ordering would be:
 In a warm, nostalgic room with antique furniture, soft afternoon light streams through lace curtains. An elderly woman with silver hair is there arranging wildflowers
 
 Hard Requirements:
--The story should be easy to follow
+-The story should be easy to follow and MUST logically follow the theme. For example, a story about a space-themed birthday can involve the characters building a rocket to go to space, but it MUST logically end with something birthday-related, like finding a cake on the moon.
 -Make sure you describe each scene independent of the other ones. For example, if you mention some object like a "big green basketball" in one scene, you cannot just say "the basketball" in a different scene, since they are independent. The correct approach is to say "big green basketball" again. You should know that each of these prompts will be passed to an image model (independently) to create the scenes.
 -If the greeting is directed to a specific demographic, you don't have to specify that in story. For example, if the title is "Dinosaur Roar Birthday for Boys", you shouldn't say "{{person_1}} is a boy" or "{{person_2}} is a boy". Just assume they are one.
 -Stories should NEVER be about just opening a greeting card. The point of this story is to be an engaging alternative to just opening a greeting card. It should paint a scenerio like the event happening, or something fantastical.
@@ -52,13 +52,13 @@ Hard Requirements:
 
 Example:
 
-Title: "Power Puff Themed Girl Birthday"
+Title: "Power Puff Themed Birthday"
 Blurb: "Send this to a girl who loves Power Puff Girls!"
 
-Q1: "Photo of the birthday girl?"
+Q1: "Photo of the birthday star?"
 Q2: "Photo of yourself?"
 
-From this, you must recognize that the characters are the birthday girl and the sender. The birthday girl corresponds to {{person_1}} and the sender corresponds to {{person_2}}.
+From this, you must recognize that the characters are the birthday star and the sender. The birthday star corresponds to {{person_1}} and the sender corresponds to {{person_2}}.
 
 The story should be:
 

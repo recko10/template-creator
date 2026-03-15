@@ -9,7 +9,7 @@ dotenv.load_dotenv()
 OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "anthropic/claude-opus-4.6"
-N_VARIATIONS = 15
+N_VARIATIONS = 100
 
 SYSTEM_PROMPT = f"""
 You are an expert at creating personal greeting cards. 
@@ -27,10 +27,10 @@ Examples of bad greeting card variations:
 - "Happy Diwali!"
 
 Examples of great greeting card variations:
-- "Football Themed Birthday For Boys"
+- "Football Themed Birthday"
 - "Casamigos-filled 21st Birthday"
 - "Aquarius Daily Horoscope"
-- "Happy Diwali, Mom!"
+- "Cracking eggs on Diwali!"
 
 An example of a personal greeting card:
 
@@ -43,11 +43,10 @@ Questions:
 
 An example of 1 variation of the above card:
 
-Title: "Giraffe Themed Boy Birthday"
+Title: "Giraffe Themed Birthday"
 Blurb: "Send this to a boy who loves giraffes!"
 Questions:
-- "Name of the birthday boy?"
-- "Photo of the birthday boy?"
+- "Photo of the birthday star?"
 - "Photo of yourself?"
 
 Requirements:
@@ -55,7 +54,6 @@ Requirements:
 -Make sure the questions are labeled plainly, such as "photo of yourself?" or "photo of the birthday star?", as some basic examples. Do not be too poetic here.
 -If there are obvious variations, you should just use those. For example, "Daily Horoscope" can easily be broken down into "Aquarius Daily Horoscope", "Pisces Daily Horoscope", etc.
 -You are allowed to be creative with the titles, but make it clear what the card is about whenever you decide to do this.
--ALWAYS mention the demographic of the recipient (age, gender, etc.) in the title. For example, "Giraffe Themed Boy Birthday" or "Casamigos-filled 21st Birthday".
 -Return your result in JSON format like so:
 
 ```json
