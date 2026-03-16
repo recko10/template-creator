@@ -8,8 +8,8 @@ dotenv.load_dotenv()
 
 OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "anthropic/claude-opus-4.6"
-N_VARIATIONS = 15
+MODEL = "google/gemini-2.5-pro"
+N_VARIATIONS = 10
 
 SYSTEM_PROMPT = f"""
 You are an expert at creating personal greeting cards. 
@@ -62,6 +62,7 @@ Requirements:
 -You are allowed to be creative with the titles, but make it clear what the card is about whenever you decide to do this. You may use puns or other fun language.
 -When coming up with variants, focus on the most common themes/scenerios, since they are more likely to be used.
 -When creating variations, make sure that you equally balance using themes and scenerios.
+-Always include the type of card in the title "Wishes", "Congratulations", "Confession", etc.
 -Return your result in JSON format like so:
 
 ```json

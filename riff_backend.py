@@ -228,9 +228,10 @@ def add_templates(
             for j, q in enumerate(variation["questions"])
         ]
         config = {
-            "version": 2,
+            "version": 3,
             "num_subjects": len(variation["questions"]),
             "num_panels": len(story_prompts[i]),
+            "system_prompt": "Create the following scene in a {aesthetic} style:",
             "prompts": [
                 {"position": str(j), "prompt": prompt}
                 for j, prompt in enumerate(story_prompts[i])

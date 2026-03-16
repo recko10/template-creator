@@ -305,9 +305,10 @@ def regenerate_gift_template_config(gift_template_id: str) -> dict:
     print(story_prompts)
 
     config = {
-        "version": 2,
+        "version": 3,
         "num_subjects": sum(1 for p in full["parameters"] if p["type"] == "image"),
         "num_panels": len(story_prompts),
+        "system_prompt": "Create the following scene in a {aesthetic} style:",
         "prompts": [
             {"position": str(j), "prompt": prompt}
             for j, prompt in enumerate(story_prompts)
@@ -420,7 +421,7 @@ def shorten_template_name(template_name: str) -> str:
                 {
                     "role": "user",
                     "content": (
-                        f'Shorten this greeting card title to 3 words max: "{template_name}"\n\n'
+                        f'Shorten this title to 3 words max: "{template_name}"\n\n'
                         "Keep the core meaning. Return ONLY the shortened title, nothing else."
                     ),
                 }
@@ -498,9 +499,10 @@ def process_variation(variation: dict) -> str:
         for j, q in enumerate(variation["questions"])
     ]
     config = {
-        "version": 2,
+        "version": 3,
         "num_subjects": len(variation["questions"]),
         "num_panels": len(story_prompts),
+        "system_prompt": "Create the following scene in a {aesthetic} style:",
         "prompts": [
             {"position": str(j), "prompt": prompt}
             for j, prompt in enumerate(story_prompts)
@@ -561,10 +563,9 @@ def create_templates_full(greeting_card: dict) -> list[str]:
     return template_ids
 
 create_templates_full({
-    "title": "Wedding Congratulations",
-    "blurb": "Celebrate the newlyweds on their special day.",
+    "title": "Saint Patrick's Day Wishes",
+    "blurb": "Wish your friends, family, and loved ones a Saint Patrick's Day",
     "questions": [
-        "Photo of the groom?",
-        "Photo of bride?",
+        "Photo of yourself?",
     ]
 })
