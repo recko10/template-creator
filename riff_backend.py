@@ -202,6 +202,8 @@ def generate_nanobanana(
     if model is not None:
         body["model"] = model
 
+    print(f"[generate_nanobanana] prompt={prompt[:80]}... aspect_ratio={aspect_ratio} pro={pro} model={model} image_urls={image_urls}")
+
     response = httpx.post(
         f"{BACKEND_ENDPOINT}/api/admin/nanobanana",
         params={"adminPassword": ADMIN_PASSWORD},
@@ -228,9 +230,19 @@ def add_templates(
             for j, q in enumerate(variation["questions"])
         ]
         config = {
-            "version": 2,
-            "num_subjects": len(variation["questions"]),
+            "version": 4,
             "num_panels": len(story_prompts[i]),
+            "system_prompt": "Create the following scene in a {aesthetic} style:\n\n",
+            "parameters": [
+                {
+                    "referrer": "{" + q.lower().replace(" ", "_").replace("?", "") + "}",
+                    "type": "image",
+                    "name": q,
+                    "position": j,
+                    "required": True,
+                }
+                for j, q in enumerate(variation["questions"])
+            ],
             "prompts": [
                 {"position": str(j), "prompt": prompt}
                 for j, prompt in enumerate(story_prompts[i])
@@ -264,4 +276,28 @@ def add_templates(
         )
         results.append(result)
     return results
+
+
+def add_collection_items(
+    collection_id: str,
+    gift_template_ids: list[str],
+    *,
+    timeout: int = 30,
+) -> dict:
+    body = {
+        "collectionId": collection_id,
+        "giftTemplateIds": gift_template_ids,
+    }
+
+    response = httpx.post(
+        f"{BACKEND_ENDPOINT}/api/admin/gift-template-collection/add-items",
+        params={"adminPassword": ADMIN_PASSWORD},
+        headers={"Content-Type": "application/json"},
+        json=body,
+        timeout=timeout,
+    )
+    if not response.is_success:
+        print(f"Error {response.status_code}: {response.text}")
+    response.raise_for_status()
+    return response.json()
 
