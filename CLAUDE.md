@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A greeting card template generator that uses LLMs (via OpenRouter API) to create variations of greeting cards and generate sequential visual story prompts for each variation. The pipeline: parent greeting card → template variations → story scene prompts.
+A greeting card template generator that uses LLMs (via OpenRouter API) to create variations of greeting cards, generate sequential visual story prompts, and publish them to a backend API. The full pipeline: parent greeting card → template variations → story scene prompts → backend creation → panel generation → cover art.
 
 ## Commands
 
@@ -14,25 +14,33 @@ A greeting card template generator that uses LLMs (via OpenRouter API) to create
 
 ## Architecture
 
-The pipeline has two LLM stages, each calling OpenRouter's chat completions API (`httpx.post`):
+### LLM Stages (all via OpenRouter chat completions API)
 
-1. **`generate_template_variation.py`** — Takes a parent greeting card (title, blurb, questions) and generates themed variations using Claude Opus via OpenRouter. Returns raw LLM text containing JSON with a `variations` array.
+1. **`generate_template_variation.py`** — Takes a parent greeting card (title, blurb, questions) and generates N_VARIATIONS (currently 50) themed variations using Gemini 2.5 Pro via OpenRouter. Returns raw LLM text containing JSON with a `variations` array.
 
-2. **`generate_story_prompts.py`** — Takes a variation and generates 10 sequential visual scene descriptions using Gemini 2.5 Pro via OpenRouter. Scenes use `{person_1}`/`{person_2}` placeholders for characters. Returns formatted scene strings with an aesthetic prefix (default: "pixel art").
+2. **`generate_story_prompts.py`** — Takes a variation and generates 10 sequential visual scene descriptions using Gemini 2.5 Pro via OpenRouter. Scenes use `{person_1}`/`{person_2}` placeholders for characters. Returns formatted scene strings with an `{aesthetic}` placeholder prefix.
 
-3. **`main.py`** — Orchestrates the pipeline: calls variation generation, parses JSON response (handles markdown code block wrapping), then generates story prompts for each variation.
+3. **`main.py`** — Orchestrates the full pipeline and contains several additional LLM-powered helpers (all using Gemini 2.5 Flash):
+   - `pick_visual_tag()` — Selects the best visual style (from VISUAL_TAGS map of UUID→style name) for a variation
+   - `pick_person_images()` — Chooses appropriate person images (from IMAGE_URLS) for panel generation based on template demographics
+   - `shorten_template_name()` — Shortens a title to 3 words for cover art text
+   - `process_variation()` — End-to-end single variation: story prompts → create template → regenerate panels → cover art
+   - `create_templates_full()` — Full pipeline: generate variations then process each in parallel (ThreadPoolExecutor, 3 workers)
+   - Also contains backfill utilities and ID lists (DEV_IDS, PROD_IDS) for batch operations
 
-4. **`riff_backend.py`** — HTTP client for creating gift templates on a backend API (`BACKEND_ENDPOINT`). Not yet integrated into the main pipeline.
+4. **`riff_backend.py`** — HTTP client for the backend API (`BACKEND_ENDPOINT`). Functions: `create_gift_template`, `update_gift_template`, `get_gift_template`, `regenerate_panels`, `update_gift_template_image`, `backfill_gift_template_music`, `generate_nanobanana`, `add_templates`.
 
-5. **`integration_tests.py`** — End-to-end tests that run the full workflow against live APIs for multiple parent greeting cards (Birthday, Wedding, Graduation).
+5. **`integration_tests.py`** — End-to-end tests that run the LLM stages (variation + story generation) against live APIs for Birthday, Wedding, and Graduation parent cards. Does not hit the backend API.
 
 ## Environment Variables (`.env`)
 
-- `OPENROUTER_API_KEY` — Required for LLM calls
-- `BACKEND_ENDPOINT` — Required by `riff_backend.py`
+- `OPENROUTER_API_KEY` — Required for all LLM calls
+- `BACKEND_ENDPOINT` — Required by `riff_backend.py` and `main.py`
+- `ADMIN_PASSWORD` — Required by `riff_backend.py` for admin API endpoints
 
 ## Key Patterns
 
-- LLM responses may be wrapped in markdown code blocks; all JSON parsing uses a regex to extract content from ` ```json ... ``` ` blocks before `json.loads`.
+- LLM responses may be wrapped in markdown code blocks; all JSON parsing uses `re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)` to extract content before `json.loads`.
 - `generate_story_prompts.py` has a fallback regex parser for malformed JSON responses.
+- Story prompt strings contain an `{aesthetic}` placeholder that gets filled at panel generation time with the visual tag's style name.
 - Uses `uv` for dependency management (Python 3.11+, httpx, python-dotenv).

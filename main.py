@@ -261,7 +261,7 @@ def shorten_template_name(template_name: str) -> str:
                 {
                     "role": "user",
                     "content": (
-                        f'Shorten this greeting card title to 3 words max: "{template_name}"\n\n'
+                        f'Shorten this title to 3 words max: "{template_name}"\n\n'
                         "Keep the core meaning. Return ONLY the shortened title, nothing else."
                     ),
                 }

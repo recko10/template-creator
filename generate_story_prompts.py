@@ -39,6 +39,7 @@ Hard Requirements:
 -Make sure you describe each scene independent of the other ones. For example, if you mention some object like a "big green basketball" in one scene, you cannot just say "the basketball" in a different scene, since they are independent. The correct approach is to say "big green basketball" again. You should know that each of these prompts will be passed to an image model (independently) to create the scenes.
 -If the greeting is directed to a specific demographic, you don't have to specify that in story. For example, if the title is "Dinosaur Roar Birthday for Boys", you shouldn't say "{{person_1}} is a boy" or "{{person_2}} is a boy". Just assume they are one.
 -Stories should NEVER be about just opening a greeting card. The point of this story is to be an engaging alternative to just opening a greeting card. It should paint a scenerio like the event happening, or something fantastical.
+-If the card is about copyrighted content, don't overtly state it in the card, but instead extract its core themes. For example, for a Star Wars themed template you can reference space, lightsabers, etc., but don't write 'Star Wars' in the story.
 -Return your result in JSON format like so:
 
 ```json
@@ -111,9 +112,4 @@ def generate_story_prompts(greeting_card_info: str) -> str:
         scenes = []
         for m in re.finditer(r'"scene_\d+":\s*"((?:[^"\\]|\\.)*)"', raw_json):
             scenes.append(m.group(1).replace('\\"', '"').replace("\\n", "\n"))
-    formatted = []
-    for scene in scenes:
-        formatted.append(
-            f"Create the following scene in a {{aesthetic}} style:\n\n{scene}"
-        )
-    return formatted
+    return list(scenes)
