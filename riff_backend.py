@@ -273,6 +273,7 @@ def add_text_param(
     name: str,
     referrer: str,
     position: Optional[int] = None,
+    description: Optional[str] = None,
     timeout: int = 30,
 ) -> dict:
     template = get_gift_template(gift_template_id, timeout=timeout)
@@ -287,13 +288,17 @@ def add_text_param(
         if p["position"] >= position:
             p["position"] += 1
 
-    params.append({
+    param = {
         "referrer": referrer,
         "type": "text",
         "name": name,
         "position": position,
         "required": True,
-    })
+    }
+    if description is not None:
+        param["description"] = description
+
+    params.append(param)
 
     return update_gift_template(gift_template_id, config=config, timeout=timeout)
 
