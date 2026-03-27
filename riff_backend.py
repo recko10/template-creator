@@ -266,3 +266,34 @@ def add_templates(
         results.append(result)
     return results
 
+
+def add_text_param(
+    gift_template_id: str,
+    *,
+    name: str,
+    referrer: str,
+    position: Optional[int] = None,
+    timeout: int = 30,
+) -> dict:
+    template = get_gift_template(gift_template_id, timeout=timeout)
+    config = template["data"]["config"]
+
+    params = config["parameters"]
+    if position is None:
+        position = len(params)
+
+    # Bump positions of existing params at or after the insertion point
+    for p in params:
+        if p["position"] >= position:
+            p["position"] += 1
+
+    params.append({
+        "referrer": referrer,
+        "type": "text",
+        "name": name,
+        "position": position,
+        "required": True,
+    })
+
+    return update_gift_template(gift_template_id, config=config, timeout=timeout)
+

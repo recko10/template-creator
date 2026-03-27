@@ -19,11 +19,12 @@ You have been hired by a greeting card company that is looking to convert their 
 You will receieve:
 - The title of a greeting card
 - A short blurb about the greeting card
-- Questions directed to the sender of the card that correspond to who the greeting card is for / who is sending it. These should be used to determine the characters of the story.
+- Questions (of type = image) directed to the sender of the card that correspond to who the greeting card is for / who is sending it. These should be used to determine the characters of the story.
+- Questions (of type = text) directed to the sender of the card that correspond to who the greeting card is for / who is sending it.
 
 Your Task: 
 -Given this information, you must create a series of {N_SCENES} visual scenes that sequentially tell the story of that greeting card.
--Each scene will involve either 1 or 2 characters, denoted by {{person_1}} and {{person_2}}. Each scene must refer to at least one of the characters.
+-Each scene will involve either 1 or 2 characters. Each scene must refer to at least one of the characters. To find out how to reference each character, look at the 'referrer' field under each image parameter(e.g. {{birthday_star}} and {{yourself}}). This tells you the name and the type of character.
 
 Scene Description Requirements:
 -The scene description to follow this order: Subject → Setting → Details → Lighting → Atmosphere. That is, describe the subjects first, then the setting, then the details, then the lighting, then the atmosphere.
@@ -37,9 +38,16 @@ In a warm, nostalgic room with antique furniture, soft afternoon light streams t
 Hard Requirements:
 -The story should be easy to follow and MUST logically follow the theme. For example, a story about a space-themed birthday can involve the characters building a rocket to go to space, but it MUST logically end with something birthday-related, like finding a cake on the moon.
 -Make sure you describe each scene independent of the other ones. For example, if you mention some object like a "big green basketball" in one scene, you cannot just say "the basketball" in a different scene, since they are independent. The correct approach is to say "big green basketball" again. You should know that each of these prompts will be passed to an image model (independently) to create the scenes.
--If the greeting is directed to a specific demographic, you don't have to specify that in story. For example, if the title is "Dinosaur Roar Birthday for Boys", you shouldn't say "{{person_1}} is a boy" or "{{person_2}} is a boy". Just assume they are one.
+-If the greeting is directed to a specific demographic, you don't have to specify that in story. For example, if the title is "Dinosaur Roar Birthday for Boys", you shouldn't say "{{birthday_star}} is a boy" or "{{me}} is a boy". Just assume they are one.
 -Stories should NEVER be about just opening a greeting card. The point of this story is to be an engaging alternative to just opening a greeting card. It should paint a scenerio like the event happening, or something fantastical.
 -If the card is about copyrighted content, don't overtly state it in the card, but instead extract its core themes. For example, for a Star Wars themed template you can reference space, lightsabers, etc., but don't write 'Star Wars' in the story.
+
+Special scenes:
+-You should always create 2 "special" scenes. A scene is considered special if it uses a text parameter. The 1st scene is always a special scene, and the other one should be determined by you (can be any of of them from 1 - {N_SCENES}).
+-1st scene (uses the 1st text parameter): Describe the 1st scene as you would normally. However, at the end of it, you need to add a line that says "Include title text that reads "[WISH FROM CARD CONTEXT] {{their_name}}". It must be woven into the scene naturally and should not be blocked by other objects. Do not include any text besides this.". [WISH FROM CARD CONTEXT] should be inferred based on the situation. If it's a birthday card, say "Happy Birthday {{their_name}}!" If it's an ambiguous card, like "You're One in a Minion Thoughts", you should infer that the sender is sending a message to a loved one to tell them they are thinking of them, so you can say "You're one in a Minion, {{their_name}}!"
+-Other scene (uses the 2nd text parameter): When creating this scene, you must create it so that you can naturally insert the value of the 2nd text parameter into the scene. For example, if the 2nd text parameter is "How many miles apart are they?" and the reference value is {{how_many_miles_apart_are_they}}, you can say "{{person_1}} and {{person_2}} are separated from each other and are shown in different houses; large title text between them reads "{{how_many_miles_apart_are_they}} miles apart"". Note that 
+
+Return format:
 -Return your result in JSON format like so:
 
 ```json
@@ -57,19 +65,24 @@ Title: "Power Puff Themed Birthday"
 Blurb: "Send this to a girl who loves Power Puff Girls!"
 
 Q1: "Photo of the birthday star?"
+Referrer: {{birthday_star}}
 Q2: "Photo of yourself?"
+Referrer: {{yourself}}
 
-From this, you must recognize that the characters are the birthday star and the sender. The birthday star corresponds to {{person_1}} and the sender corresponds to {{person_2}}.
+TextQ1: "Their Name?"
+TextQ2: "Name of their favorite Power Puff Girl?"
+
+From this, you must recognize that the characters are the birthday star and the sender. The birthday star corresponds to {{birthday_star}} and the sender corresponds to {{yourself}}.
 
 The story should be:
 
 {{
     "scenes": {{
-        "scene_1": "{{person_1}} excitedly receives a colorful birthday card featuring the Power Puff Girls.",
-        "scene_2": "{{person_1}} opens a greeting card and discovers a cheerful message inside.",
-        "scene_3": "{{person_1}} shows a greeting card to {{person_2}}, sharing a smile.",
-        "scene_4": "{{person_1}} and {{person_2}} strike Power Puff Girl poses together.",
-        "scene_5": "{{person_1}} imagines becoming a superhero like the Power Puff Girls, with {{person_2}} cheering them on."
+        "scene_1": "{{birthday_star}} excitedly receives a colorful birthday card featuring the Power Puff Girls, it reads 'Happy Birthday, {{their_name}}!'.",
+        "scene_2": "{{birthday_star}} opens a greeting card and discovers a cheerful message inside.",
+        "scene_3": "{{birthday_star}} shows a greeting card to {{yourself}}, sharing a smile.",
+        "scene_4": "{{birthday_star}} and {{yourself}} strike Power Puff Girl poses together, with {{name_of_their_favorite_power_puff_girl}} from Power Puff Girls in the background.",
+        "scene_5": "{{birthday_star}} imagines becoming a superhero like the Power Puff Girls, with {{yourself}} cheering them on."
     }}
 }}
 

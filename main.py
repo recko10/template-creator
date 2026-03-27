@@ -8,7 +8,7 @@ import httpx
 
 from generate_story_prompts import generate_story_prompts
 from generate_template_variation import generate_template_variation
-from riff_backend import add_templates, create_gift_template, get_gift_template, update_gift_template, regenerate_panels, generate_nanobanana, update_gift_template_image, backfill_gift_template_music
+from riff_backend import add_templates, add_text_param, create_gift_template, get_gift_template, update_gift_template, regenerate_panels, generate_nanobanana, update_gift_template_image, backfill_gift_template_music
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 dotenv.load_dotenv()
@@ -562,10 +562,111 @@ def create_templates_full(greeting_card: dict) -> list[str]:
 
     return template_ids
 
-create_templates_full({
-    "title": "Saint Patrick's Day Wishes",
-    "blurb": "Wish your friends, family, and loved ones a Saint Patrick's Day",
-    "questions": [
-        "Photo of yourself?",
+# NOTE text param backfilling
+def generate_text_params(gift_template_id: str) -> list[dict]:
+    """Use an LLM to devise 2 text params for a template: 'Their Name?' plus one contextual param."""
+    full = get_gift_template(gift_template_id)["data"]
+    title = full["name"]
+    blurb = full["blurb"]
+    existing_params = full.get("parameters", [])
+
+    prompt = (
+        f"Greeting card template:\n"
+        f"Title: {title}\n"
+        f"Blurb: {blurb}\n"
+        f"Existing parameters: {[p['name'] for p in existing_params]}\n\n"
+        "I need ONE additional text parameter for this greeting card that the sender fills in to personalize it. "
+        "This should be a short question asking for a piece of text that is specific and relevant to this template's topic.\n\n"
+        "Examples of good text parameters:\n"
+        '- For a birthday card: "How old are they turning?"\n'
+        '- For a graduation card: "What is the name of their school?"\n'
+        '- For a wedding card: "What are the couple\'s names?"\n'
+        '- For a retirement card: "What was their profession?"\n\n'
+        "Rules:\n"
+        '- Do NOT suggest "Their Name?" — that is already handled separately.\n'
+        "- The question should be short (under 8 words), and it should expect a clear 1-3 word answer. Each question must be direct and not open ended.\n"
+        "- Return JSON only, no explanation:\n"
+        "- DO NOT discuss the theme of the card in the question (Hot Sauce Birthday and Hello Kitty birthday are basically the same thing, you shouldn't ask questions about Hot Sauce or Hello Kitty, just about birthdays).\n"
+        "- If there is no apparent meaning in the greeting card, you need to identify it. For example, if the title is 'You're One in a Minion Thoughts', then obviously that card is about thinking about/missing a loved one, so create the parameter accordingly.\n"
+        '{"name": "<question>", "referrer": "{<snake_case_placeholder>}"}\n'
+    )
+
+    response = httpx.post(
+        OPENROUTER_URL,
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "google/gemini-2.5-flash",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    content = response.json()["choices"][0]["message"]["content"]
+
+    json_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", content)
+    raw_json = json_match.group(1).strip() if json_match else content.strip()
+    custom_param = json.loads(raw_json)
+
+    print(f"Template '{title}': custom text param = {custom_param}")
+
+    # "Their Name?" always first (position 0), custom param always last
+    result_1 = add_text_param(
+        gift_template_id,
+        name="Their Name?",
+        referrer="{their_name}",
+        position=0,
+    )
+    result_2 = add_text_param(
+        gift_template_id,
+        name=custom_param["name"],
+        referrer=custom_param["referrer"],
+    )
+
+    return [result_1, result_2], custom_param
+
+def regenerate_with_text_params(gift_template_id: str) -> dict:
+    """End-to-end: add text params, regenerate story prompts with them, update config."""
+
+    # Step 1: Add text params to the template
+    _, custom_param = generate_text_params(gift_template_id)
+    print(f"Added text params for {gift_template_id}")
+
+    # Step 2: Re-fetch template (now has new text params) and regenerate story prompts
+    full = get_gift_template(gift_template_id)["data"]
+    config = full["config"]
+
+    questions = [
+        f"{p['name']} (referrer: {p['referrer']})" for p in full["parameters"]
     ]
-})
+    prompt = (
+        f"Title: {full['name']}\n"
+        f"Blurb: {full['blurb']}\n"
+        f"Questions: {questions}\n\n"
+    )
+    print("Prompt:")
+    print(prompt)
+    print(f"Regenerating story prompts for: {full['name']}")
+
+    story_prompts = generate_story_prompts(prompt)
+    print(story_prompts)
+
+    # Update prompts in-place on the fetched config
+    config["num_panels"] = len(story_prompts)
+    config["prompts"] = [
+        {"position": str(j), "prompt": p}
+        for j, p in enumerate(story_prompts)
+    ]
+
+    print("Config to send:")
+    print(json.dumps(config, indent=2))
+
+    result = update_gift_template(gift_template_id, config=config)
+    print(f"Updated config for {gift_template_id}")
+    return result
+
+# regenerate_with_text_params("8037e5d6-9fcc-482b-b553-15ff351d4089")
+
+# TODO re-order params
