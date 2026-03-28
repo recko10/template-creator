@@ -9,7 +9,7 @@ dotenv.load_dotenv()
 OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "google/gemini-2.5-pro"
-N_VARIATIONS = 10
+N_VARIATIONS = 50
 
 SYSTEM_PROMPT = f"""
 You are an expert at creating personal greeting cards. 
@@ -57,7 +57,7 @@ Questions:
 
 Requirements:
 -Only include photo related questions. You may use either exactly 1 or 2 questions based on whether the card is dedicated to just yourself (yes this is possible), just someone else, or involves both you and someone else.
--Make sure the questions are labeled plainly, such as "photo of yourself?" or "photo of the birthday star?", as some basic examples. Do not be too poetic here.
+-Make sure the questions are labeled plainly, such as "photo of yourself?" or "photo of the birthday star?", as some basic examples. DO NOT make any of them very related to the card, like "photo of you eating a donut?", keep it simple like "photo of yourself?".
 -If there are obvious variations, you should just use those. For example, "Daily Horoscope" can easily be broken down into "Aquarius Daily Horoscope", "Pisces Daily Horoscope", etc.
 -You are allowed to be creative with the titles, but make it clear what the card is about whenever you decide to do this. You may use puns or other fun language.
 -When coming up with variants, focus on the most common themes/scenerios, since they are more likely to be used.

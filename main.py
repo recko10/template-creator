@@ -534,13 +534,26 @@ def process_variation(variation: dict) -> str:
         {"name": q, "type": "image", "required": True, "position": j}
         for j, q in enumerate(variation["questions"])
     ]
+    # Build referrer strings from questions
+    referrers = [
+        "{" + q.lower().replace(" ", "_").replace("?", "") + "}"
+        for q in variation["questions"]
+    ]
+
+    # Replace {person_1}, {person_2} in story prompts with actual referrers
+    replaced_prompts = []
+    for prompt in story_prompts:
+        for i, ref in enumerate(referrers):
+            prompt = prompt.replace(f"{{person_{i+1}}}", ref)
+        replaced_prompts.append(prompt)
+
     config = {
         "version": 4,
-        "num_panels": len(story_prompts),
+        "num_panels": len(replaced_prompts),
         "system_prompt": "Create the following scene in a {aesthetic} style:\n\n",
         "parameters": [
             {
-                "referrer": "{" + q.lower().replace(" ", "_").replace("?", "") + "}",
+                "referrer": referrers[j],
                 "type": "image",
                 "name": q,
                 "position": j,
@@ -550,9 +563,10 @@ def process_variation(variation: dict) -> str:
         ],
         "prompts": [
             {"position": str(j), "prompt": prompt}
-            for j, prompt in enumerate(story_prompts)
+            for j, prompt in enumerate(replaced_prompts)
         ],
     }
+    print(f"[process_variation] config={json.dumps(config, indent=2)}")
     result = create_gift_template(
         variation["title"],
         blurb=variation["blurb"],
@@ -591,7 +605,7 @@ def create_templates_full(greeting_card: dict) -> list[str]:
 
     # Parallel: process each variation end-to-end, concurrency 5
     template_ids = []
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
             executor.submit(process_variation, variation): i
             for i, variation in enumerate(variations)
@@ -927,41 +941,245 @@ WEDDING_TEMPLATE_IDS = [
     "674a0956-87a2-40dd-ae30-cf412976d2b9",  # A Super-Powered Wedding Congratulations
 ]
 
-# create_templates_full({
-#     "title": "Good Luck on Your Exam!",
-#     "blurb": "Send this to a friend who is taking an exam.",
+EXAMS_TEMPLATE_IDS = [
+    "ef38e4ca-7c5d-4de6-a812-22915848c950",
+    "5eace0ed-178a-4fbf-93b3-04056af54b8b",
+    "fbaf0cef-8436-4c42-98f4-674cd4b99b45",
+    "3da2dde1-5737-49f1-b89d-f81188ecd61d",
+    "210321a0-7da8-4046-9d70-40a83149c279",
+    "75df7ece-86a7-4202-9260-eba49b547b63",
+    "e0cf6d47-f920-4fe3-8066-97e4e1161776",
+    "1fbe6f97-a8a5-448f-8f0d-d03dd9bf40b8",
+    "f310b356-15dc-4468-ad80-8d370609a6be",
+    "c98f7757-b864-4eeb-a7eb-6dc41e506159",
+    "d4d7e730-cba5-4e4b-9e84-a8c2a343f675",
+    "02232970-acda-4e05-aa72-e50dc3c3f32e",
+    "14556f43-07ba-41f6-b527-0d00897e3293",
+    "e6588261-56b9-4d0e-97c7-b1c327769ca2",
+    "2c8580c7-0221-4be0-af66-37d572c2003b",
+    "a77c958c-2590-416b-a56a-b01757701114",
+    "ea2e50bc-086e-48c8-a550-e79fccd2f3c1",
+    "c905ec33-c58e-4755-9f7c-bfe8da2e694d",
+    "19c3647a-d390-469a-8771-a2aaa7257999",
+    "3cab5137-87b0-46f9-921d-ef49670982b4",
+    "52ab30b5-57cf-489e-8422-5b3b012336c5",
+    "f9761e71-0890-4f66-9e82-b76e807400f4",
+    "7ddd51ec-697e-413e-a65c-6980463fc15a",
+    "4bb6e203-e90b-4037-a903-fc2847e95b3a",
+    "3a7ef5d5-a49a-4182-9539-4693812e905a",
+    "a3fb4063-5410-4684-8b64-e1bd1659736f",
+    "be5a596e-8183-4d03-9780-a2e89d5d20e7",
+    "b50a3f16-2862-4cd6-a68d-b88848be2d5c",
+    "02d1149b-ac54-4984-bc78-96157d8eb9d4",
+    "9a44cede-abe2-4141-b7b8-e841c4e23461",
+]
+
+FRIENDS_AND_FAMILY = [
+    "449c47b2-53e8-40a2-8e89-60194f716940",
+    "a8e4d193-2ff6-42a8-8ddd-c9b29d9dee21",
+    "a1bff97c-c5a7-4851-8cca-88ade5b3cdf5",
+    "c7e92060-253c-4fe0-b5a1-f0c072b989fd",
+    "1ab3accf-cea4-4875-b76f-748a3fde4584",
+    "85a39dfe-1ac3-4681-83f3-93d52f860866",
+    "b8501fd1-503d-4feb-8ebf-4b29ec2d9a20",
+    "c1124afd-bd01-4182-a99a-e2dafa90f3ca",
+    "9deb5d15-fe5d-4548-9f3e-fbdc8e0ff72a",
+    "c89820b3-5bd0-4e77-823c-a3eb0cd899af",
+    "58a83467-b29d-4128-908a-06cb441a4e4c",
+    "7995d22e-7229-41bf-a74b-a043d7e4a936",
+    "56949209-f4ac-463a-be4e-dd9b6f553d96",
+    "f25561a7-0225-4c0c-9ddc-53bd32582486",
+    "429101a2-3bdb-4ab2-b3b2-5cf5ebdbe672",
+    "395d97cb-e315-49d3-9d9a-4a4b190b2302",
+    "d5ec5ca0-5517-499d-a2a7-bf5c1ef9d482",
+    "132d5aab-f815-4375-ae7c-0dcaaf5a297c",
+    "21cc365b-25c8-4838-8ce7-30d6da66c11c",
+    "8d41ae69-9044-4edd-8b49-9135e51f0c5d",
+    "a4994f8f-68a6-4a4f-bc58-82609309cb65",
+    "1496d73e-e631-4a98-820b-b65bb716f879",
+    "ac7b588b-b71a-4874-9670-c794f4cbf899",
+    "40116a7c-6f5b-4c81-b2ca-4f2ab473c243",
+    "881bacd2-7918-4737-90df-fcc258a66142",
+    "ce024ada-9339-49f9-b09f-5c956f128074",
+    "cbe4a2f2-93aa-478d-82e1-28b79c2abc3a",
+    "7c52af6e-f809-4ed2-9723-83094e110bdf",
+    "72c77810-b96c-4062-aa0b-adfe461fcb5e",
+    "2214b043-64d8-483e-ac79-4fe8fd3ce93e",
+    "0a012702-afab-41b7-8a69-eb98164f3cf9",
+    "29077dbe-ff28-4c7e-aab8-28df4fb8f643",
+    "31966be9-3afb-4ef0-80af-e244fcc9decf",
+    "35e3f9ac-1cdc-4f71-8bd8-e7c575ce6f6e",
+    "21f509ad-2be0-4ffb-b29f-bc293e98ad94",
+    "acad0caf-122c-445b-9e95-70f0e0bc8646",
+    "00f81762-8588-455d-a6d3-efd0f81f8710",
+    "95ee3352-9d0e-4821-8eff-cabc856a96ff",
+    "305f93f7-4cb4-44d9-8f59-c71f33af87ed"
+]
+
+ANIME = [
+    # Friendship & Adventure
+    "dec5420f-4024-459c-b777-57a805433db2",
+    "9dfe6c8d-45d7-4d4e-9656-7c4862f772c4",
+    "e77b27fd-7730-4511-a94f-253b66f32dd4",
+    "46ac3d7f-6c85-40a2-bbb0-85f99048c133",
+    "c9d2a278-3fa2-4e57-b660-8a374f3be3d6",
+    "5a42751f-fbe7-4f74-bbf3-44772609b572",
+    "53e363c4-b2bb-4a52-a8f8-201eaf4f68b7",
+    "9a99738e-9486-48ab-8354-31c31b4a83c1",
+    "e1b0a33d-dcd4-48cb-8a91-7ab1f4ad79d5",
+    "083466e9-1f2f-4a45-8c8b-313c0b11cadc",
+    "d68fc1fa-f014-48c3-8713-ab0c00f12e72",
+    "67eb2e8c-a297-4df6-8385-731a0e1173a6",
+    "06a167d1-956d-4a36-9425-11fd52d7fbea",
+    "cde6fc10-8ea9-415c-9da5-67aab2596cd0",
+    "fadebdf2-5681-4046-97f2-0044c9dc4d34",
+    "5b5b40b2-500d-42a4-bef8-a7206fce44cd",
+    "af273387-1417-4fda-9125-a03f31207e30",
+    "72174b0b-c837-4c4c-af84-9a211393ed95",
+    "5d8f310c-f127-4e75-97f1-48cbaa8f7f3f",
+    "f740890d-79f7-4ccc-bf5c-4544578221ac",
+    # Get Well Soon
+    "5298f857-1013-4590-823e-1050b656f3eb",
+    "2feddf24-7693-40d7-a6d2-851756b02240",
+    "60703908-612e-4cdd-9e87-5cc3f5e7cccb",
+    "86746326-12f7-4aaf-9c65-b6b475e39f9d",
+    "470b261b-690c-43a3-b0c0-044145e05f05",
+    "81700a5b-44f0-432f-aa3d-22247b8d0f98",
+    "50452e7a-190c-4951-9eb4-8cc70c02298d",
+    "86883359-b9e1-436b-af4d-d4f27d5adcfd",
+    "588beee5-a088-4d1b-a4af-63912af39786",
+    "cdcaf536-11be-4a7d-a2ea-5706c6920847",
+    "1dace638-8cd1-4b9d-aa37-39a605ece437",
+    "50eff01d-38f8-4073-8d86-d2b1c79d4ae8",
+    "da510507-e3ef-485f-88b7-9fe53dec43ac",
+    "14ccca96-33ee-4ffd-9f15-463f620dde0a",
+    "06e11031-cfd0-4cf1-b345-b03bdbba1cfa",
+    "403b013c-ed04-4ad1-ac52-9f50aa6ff425",
+    "48328cc3-0c5d-4577-a478-f2b60a5b7776",
+    "b730ed66-616c-4cd5-81c9-3b871fd894e0",
+    "9b677a8c-be33-4fb1-a6ba-8330940f7acc",
+    "9d72dddb-a063-4251-b518-df32e5d5f91a"
+]
+
+GOOD_MORNING = [
+    "8ddd3c18-2a1b-4053-9296-20c18d1c3a6a",
+    "46ffac73-ab53-45c0-98ad-5b291189e451",
+    "36e06985-94f4-4ee6-ac5d-c9482c17862f",
+    "f83a750b-5f29-4890-b383-dd52263772f6",
+    "43c6371c-98c5-420c-8962-c90449e6c7ce",
+    "a6104897-0d9c-4c78-ac89-68ebf3c19c7f",
+    "7e60772f-7b6c-4cbd-8a86-a82c0516f769",
+    "e0d4382c-e6df-4636-ac34-aec0e344e76c",
+    "34267d7d-d242-4883-874d-338f4a99caed",
+    "812e7965-9f85-44a1-ac46-045a1ccf7dec",
+    "7a1e27bd-3982-43d8-b1db-e73c81247ed0",
+    "7cebaca8-6bc2-433d-beb9-6d7da995e6c4",
+    "60645369-a8b2-49e7-9cac-6a311b0c4b18",
+    "17fd47df-3743-4aca-aa02-13622fe7b6e6",
+    "8a9914be-2156-48a6-9620-b184fb2bc753",
+    "c626e80c-5e19-4f3a-8277-aafc5ebacca3",
+    "f79c634d-5d84-49e1-a046-8f739877559e",
+    "ecd46a0c-dc86-4519-95ce-c79226bbfb68",
+    "83be6537-1e71-4bff-9267-c2c536705ed3",
+    "4e520a41-8bed-4f9e-bc94-fd14b04a99b7",
+    "d225836f-fc22-4256-8ec1-749609ac66e6",
+    "2cf549da-7f1a-4c92-8964-873fb321ea6c",
+    "b9176502-a0eb-4bdb-8a7c-a3b9e286ef2f",
+    "798a95ad-7292-4e51-b05f-a4aa61cc1882",
+    "8de43223-2b3a-4ca5-9e4c-4c08b189c95c",
+    "8817c011-1cd6-4434-8012-76e1ea56717e",
+    "b65e4ea5-b5eb-4ee9-a04e-00abf7383f70",
+    "e230ff2e-93d5-46dd-942f-7e4d2f38bdf6",
+    "8eab473b-8c7c-4ae5-94f4-bf0df451d990",
+    "84ad3af5-7bdb-4fa5-9ffb-105784550052",
+    "c44b62cf-9a8b-4b58-932e-1712722ff374",
+    "8ed18050-4d0d-49a2-a332-aa1be01c0a7b",
+    "f6c7a979-17cd-4fe2-a9cc-62b17a13eed7",
+    "ece3802e-8ee8-466f-b36b-060e9b8f357a",
+    "d4fbc326-2e55-4e78-8604-05e06205ab01"
+]
+
+# NOTE
+# ids  = create_templates_full({
+#     "title": "I'm Sorry",
+#     "blurb": "Apologize to a loved one",
 #     "questions": [
-#         "Photo of the exam taker?",
+#         "Photo of your friend?",
 #         "Photo of yourself?",
 #     ]
 # })
+# print(f"Created template IDs: {ids}")
+
+# ids = create_templates_full({
+#     "title": "Thank You!",
+#     "blurb": "Show your appreciation to a loved one",
+#     "questions": [
+#         "Photo of your friend?",
+#         "Photo of yourself?",
+#     ]
+# })
+# print(f"Created template IDs: {ids}")
+
+# ids = create_templates_full({
+#     "title": "Good Morning",
+#     "blurb": "Nothing lifts the spirit like a morning text!",
+#     "questions": [
+#         "Photo of your friend?",
+#         "Photo of yourself?",
+#     ]
+# })
+# print(f"Created template IDs: {ids}")
 
 # NOTE adding templates to a collection
 # add_collection_items(
-#     collection_id="10df10e1-04c3-447a-8038-17c9b9ec27ff",
-#     gift_template_ids=WEDDING_TEMPLATE_IDS,
+#     collection_id="e9aa12ad-ea5c-4dc0-ac84-07f7332196a8",
+#     gift_template_ids=GOOD_MORNING,
 # )
 
-# NOTE
-# Birthdays
-# Astrology
-# Holidays
-# Confessions
-# Anniversaries
-# Missing You
-# Indian Weddings
-# Weddings
+# Get Well Soon
 
-# Global trending (TODO)
-# India trending (TODO)
+def backfill_title(gift_template_id: str) -> dict:
+    full = get_gift_template(gift_template_id)["data"]
+    current_title = full["name"]
+    blurb = full.get("blurb", "")
+    config = full.get("config", {})
+    story_prompts = [p["prompt"] for p in config.get("prompts", [])]
 
-# TODO populate on create feed too
+    prompt = (
+        "You will be given the (the very boring) title of a story, a blurb associated with it, and a list of prompts describing the story."
+        "Given these parameters, rewrite the title to be much more engaging."
+        "Focus on clarity, fun, and ensuring it stands out. Although, do not be overly dramatic. Also, each of these stories are dedicated to a specific person -- each story topic is about or dedicated to someone. Make sure to make this clear too."
+        "For example, if the title is 'Taco 'Bout an Amazing Birthday', you should make it read like the title of a great book or TV show like 'Enter the Tacoverse' or 'Taco-rama'. If it's 'Morning Gym Grind', it should be 'Powerlifting in the AM' "
+        f"As a hard requirement: never use the 'variables' (denoted between {{}}) in the title. For example, 'Leap Back to Life: A Story for {{Friend's Name}}' is bad, but 'Leap Back to Life' is good."
+        "As a hard requirement, it should be 5 words or less."
+        "Return only the new title in quotes, nothing else.\n"
+        f"Current title: {current_title}\n"
+        f"Blurb: {blurb}\n"
+        f"Story: {json.dumps(story_prompts)}\n"
+    )
 
-create_templates_full({
-    "title": "Good Luck on Your Exam!",
-    "blurb": "Send this to a friend who is taking an exam.",
-    "questions": [
-        "Photo of the exam taker?",
-        "Photo of yourself?",
-    ]
-})
+    response = httpx.post(
+        OPENROUTER_URL,
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "anthropic/claude-opus-4.6",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    new_title = response.json()["choices"][0]["message"]["content"].strip().strip('"')
+
+    print(f"Backfill title: '{current_title}' -> '{new_title}'")
+    result = update_gift_template(gift_template_id, name=new_title)
+    return result
+
+# backfill_title("8de43223-2b3a-4ca5-9e4c-4c08b189c95c")
+# backfill_title("b913ae03-c7af-44df-b016-4cdc6d7f90f2")
+# backfill_title("ae1b608f-7bc6-40b9-aa7f-2127c9450ce0")
+# backfill_title("3a5f2399-c5ba-4eaa-ba68-7e51dea8832b")
+# backfill_title("39a543b6-97a7-4be3-aaab-08095846f59e")
+# backfill_title("308e2a8c-7123-4f49-ae18-98b310d1a585")

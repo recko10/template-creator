@@ -1,3 +1,4 @@
+import json
 import os
 import random
 from typing import Optional
@@ -52,6 +53,8 @@ def create_gift_template(
 
     if config is not None:
         body["config"] = config
+
+    print(f"[create_gift_template] body={json.dumps(body, indent=2)}")
 
     response = httpx.post(
         f"{BACKEND_ENDPOINT}/api/admin/gift-template/create",
