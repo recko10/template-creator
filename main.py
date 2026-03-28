@@ -642,4 +642,3 @@ def regenerate_with_text_params(gift_template_id: str) -> dict:
 
     return regen_result
 
-# regenerate_with_text_params("c8f6388b-1fc7-4e67-a391-89dc3cac03cc")
