@@ -2,6 +2,7 @@ import json
 import os
 import random
 import re
+from typing import Optional
 
 import dotenv
 import httpx
@@ -379,7 +380,7 @@ def pick_person_images(template_name: str, template_blurb: str, questions: list[
     person_two_url = IMAGE_URLS[data["person_two"]]
     return person_one_url, person_two_url
 
-def regenerate_template_previews(tid: str):
+def regenerate_template_previews(tid: str, *, extra_referrers: Optional[dict[str, str]] = None):
     full = get_gift_template(tid)["data"]
     visual_tags = [t for t in full.get("tags", []) if t["type"] == "visual"]
     if visual_tags:
@@ -391,12 +392,19 @@ def regenerate_template_previews(tid: str):
     person_one_url, person_two_url = pick_person_images(full["name"], full["blurb"], questions)
     print(f"{full['name']}: person_one={person_one_url}, person_two={person_two_url}")
 
-    return regenerate_panels(
-        tid,
-        aesthetic=aesthetic,
-        person_one_image_url=person_one_url,
-        person_two_image_url=person_two_url,
-    )
+    # Build referrer map from config parameters
+    config = full["config"]
+    image_params = [p for p in config.get("parameters", []) if p["type"] == "image"]
+    referrer_map = {
+        "{aesthetic}": aesthetic,
+        image_params[0]["referrer"]: person_one_url,
+        image_params[1]["referrer"]: person_two_url,
+    }
+
+    if extra_referrers:
+        referrer_map.update(extra_referrers)
+
+    return regenerate_panels(tid, referrer_map=referrer_map)
 
 # with ThreadPoolExecutor(max_workers=2) as executor:
 #     futures = {executor.submit(regenerate_for_template, tid): tid for tid in PROD_IDS}
@@ -621,6 +629,17 @@ def regenerate_with_text_params(gift_template_id: str) -> dict:
 
     result = update_gift_template(gift_template_id, config=config)
     print(f"Updated config for {gift_template_id}")
-    return result
 
-# regenerate_with_text_params("de1a23d2-fda7-441e-96e7-97a33563e611")
+    # Step 3: Regenerate panels with text param values
+    regen_result = regenerate_template_previews(
+        gift_template_id,
+        extra_referrers={
+            "{their_name}": "John",
+            "{personal_message}": "Keep rockin'",
+        },
+    )
+    print(f"Regenerated panels for {gift_template_id}")
+
+    return regen_result
+
+# regenerate_with_text_params("c8f6388b-1fc7-4e67-a391-89dc3cac03cc")

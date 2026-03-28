@@ -114,16 +114,12 @@ def update_gift_template(
 def regenerate_panels(
     gift_template_id: str,
     *,
-    aesthetic: str = "pixel art",
-    person_one_image_url: str,
-    person_two_image_url: str,
+    referrer_map: dict[str, str],
     timeout: int = 120,
 ) -> dict:
     body = {
         "giftTemplateId": gift_template_id,
-        "aesthetic": aesthetic,
-        "personOneImageUrl": person_one_image_url,
-        "personTwoImageUrl": person_two_image_url,
+        "referrerMap": referrer_map,
     }
 
     response = httpx.post(
