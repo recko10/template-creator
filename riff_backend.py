@@ -110,7 +110,6 @@ def update_gift_template(
     response.raise_for_status()
     return response.json()
 
-
 def regenerate_panels(
     gift_template_id: str,
     *,

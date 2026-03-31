@@ -42,11 +42,12 @@ Hard Requirements:
 -If the greeting is directed to a specific demographic, you don't have to specify that in story. For example, if the title is "Dinosaur Roar Birthday for Boys", you shouldn't say "{{birthday_star}} is a boy" or "{{me}} is a boy". Just assume they are one.
 -Stories should NEVER be about just opening a greeting card. The point of this story is to be an engaging alternative to just opening a greeting card. It should paint a scenerio like the event happening, or something fantastical.
 -If the card is about copyrighted content, don't overtly state it in the card, but instead extract its core themes. For example, for a Star Wars themed template you can reference space, lightsabers, etc., but don't write 'Star Wars' in the story.
+-You must create exactly {N_SCENES} scenes.
 
 Special scenes:
 -You should always create 2 "special" scenes. A scene is considered special if it uses a text parameter. The 1st and last scenes are always special scenes.
--1st scene (uses the 1st text parameter): Describe the 1st scene as you would normally. However, as the second sentence, you should always say "Title text that reads "[WISH FROM CARD CONTEXT] {{their_name}}".". [WISH FROM CARD CONTEXT] should be inferred based on the situation. If it's a birthday card, say "Happy Birthday {{their_name}}!" If it's an ambiguous card, like "You're One in a Minion Thoughts", you should infer that the sender is sending a message to a loved one to tell them they are thinking of them, so you can say "You're one in a Minion, {{their_name}}!"
--Last scene (uses the 2nd text parameter): This scene should be a pure text scene. Always use the prompt "Note dedicated to friend, title reads {{TEXT PARAMETER 2}}. Include the {{IMAGE PARAMETER 1}} and {{IMAGE PARAMETER 2}} in the background". Of course, replace each of my placeholders with the actual values.
+-1st scene (uses the 1st text parameter): Describe the 1st scene as you would normally. However, as the second sentence, you should always say "Title text that reads "[WISH FROM CARD CONTEXT] {{TEXT PARAMETER 1}}".". [WISH FROM CARD CONTEXT] should be inferred based on the situation. If it's a birthday card, say "Happy Birthday {{their_name}}!" If it's an ambiguous card, like "You're One in a Minion Thoughts", you should infer that the sender is sending a message to a loved one to tell them they are thinking of them, so you can say "You're one in a Minion, {{their_name}}!"
+-Last scene (uses the 2nd text parameter): This scene should be a pure text scene. Always use the prompt "Title reads {{TEXT PARAMETER 2}}. Include the {{IMAGE PARAMETER 1}} and {{IMAGE PARAMETER 2}} in the background". Of course, replace each of my placeholders with the actual values.
 
 Return format:
 -Return your result in JSON format like so:
