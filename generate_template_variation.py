@@ -116,3 +116,4 @@ def generate_template_variation(user_prompt: str, timeout: int = 120) -> str:
 # Questions: {GREETING_CARD_INFO["questions"]}
 # """
 # print(generate_template_variation(GREETING_CARD_PROMPT))
+

@@ -1197,3 +1197,5 @@ IPL_PARAM_TYPES = {
 # for template in IPL_TEMPLATES:
 #     template["questions"] = IPL_QUESTIONS
 #     process_variation(template, param_types=IPL_PARAM_TYPES)
+
+regenerate_template_previews(template_id="539811e4-a4e8-4d6d-a424-1171b462fe93")
