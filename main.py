@@ -1194,8 +1194,8 @@ IPL_PARAM_TYPES = {
     "Write a cheer for the team!": "text",
 }
 
-# for template in IPL_TEMPLATES:
-#     template["questions"] = IPL_QUESTIONS
-#     process_variation(template, param_types=IPL_PARAM_TYPES)
-
-regenerate_template_previews(template_id="539811e4-a4e8-4d6d-a424-1171b462fe93")
+regenerate_template_previews("539811e4-a4e8-4d6d-a424-1171b462fe93", extra_referrers={
+    "{favorite_player}": "Rohit Sharma",
+    "{me}": "https://db.goriff.com/storage/v1/object/public/logo/aihuman/indian-man.jpg",
+    "{personal_message}": "Let's go MI!",
+})
